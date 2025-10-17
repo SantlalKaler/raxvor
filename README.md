@@ -7,7 +7,7 @@ It supports **text chat, audio calls, and video calls**, making it perfect for p
 
 ## 📷 Screenshots
 
-| Home Screen | Chat Screen | Audio Call | Video Call | Wallet Screen | Profile Screen |
+| Splash Screen | Login Screen | Home | Wallet | Chat | Call |
 |------------|------------|------------|------------|---------------|----------------|
 | ![](assets/screenshots/ss0.png) | ![](assets/screenshots/ss1.png) | ![](assets/screenshots/ss2.png) | ![](assets/screenshots/ss3.png) | ![](assets/screenshots/ss4.png) | ![](assets/screenshots/ss5.png) |
 
