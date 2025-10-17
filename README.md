@@ -1,16 +1,58 @@
-# raxvor
+# 📱 Raxvor - Social Chat & Calling App
 
-A new Flutter project.
+**Raxvor** is a real-time chat and calling application with features similar to WhatsApp.  
+It supports **text chat, audio calls, and video calls**, making it perfect for personal or small-group communication.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 📷 Screenshots
 
-A few resources to get you started if this is your first Flutter project:
+| Home Screen | Chat Screen | Audio Call | Video Call | Wallet Screen | Profile Screen |
+|------------|------------|------------|------------|---------------|----------------|
+| ![](assets/screenshots/ss0.png) | ![](assets/screenshots/ss1.png) | ![](assets/screenshots/ss2.png) | ![](assets/screenshots/ss3.png) | ![](assets/screenshots/ss4.png) | ![](assets/screenshots/ss5.png) |
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 Key Features
+
+### 🔑 Authentication
+- Users can **sign up / log in** with email and password.  
+- Firebase Auth handles authentication securely.  
+
+### 🏠 Home Screen
+- Displays **list of users** available for chat or calls.  
+- Users can **select a contact** to start a chat, audio call, or video call.  
+
+### 💬 Chat
+- Real-time text messaging between users.  
+- Message history stored in **Supabase**.  
+- Supports emoji and message timestamps.  
+
+### 📞 Audio & Video Calling
+- High-quality **audio and video calls** powered by **Agora SDK**.  
+- One-to-one call functionality.  
+
+### 👤 Profile Screen
+- Users can view and update their profile.  
+- Profile includes **username, email, and profile picture**.  
+
+### 💰 Wallet Screen
+- Users can view **wallet balance** (optional for future in-app purchases or credits).  
+- Simple, clean interface to display wallet status.  
+
+---
+
+## 🧰 Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Flutter |
+| **Backend / Database** | Supabase (user & chat data) |
+| **Authentication** | Firebase Auth |
+| **Realtime & Notifications** | Firebase Realtime Database / FCM |
+| **Audio/Video Calls** | Agora SDK |
+| **Hosting / Deployment** | Supabase / Firebase |
+
+---
+
+# Run the app
+flutter run
