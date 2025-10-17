@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "708623889191",
+    "project_id": "raxvor-33da2",
+    "storage_bucket": "raxvor-33da2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:708623889191:android:69e233e35fd1682a33ef02",
+        "android_client_info": {
+          "package_name": "com.app.raxvor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDH9aYD3rzAgz2cV6IMhbxNc-6gC6k9aIo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

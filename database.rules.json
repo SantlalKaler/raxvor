@@ -1,0 +1,34 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "rooms": {
+      "$roomId": {
+        "messages": {
+          ".indexOn": ["createdAt"],
+          "$msgId": {
+            ".write": "auth != null && newData.hasChildren(['uid','text','createdAt']) && newData.child('uid').val() === auth.uid",
+            ".validate": "newData.child('text').isString() && newData.child('text').val().length <= 2000"
+          }
+        },
+        "participants": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        }
+      }
+    },
+    "presence": {
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "typing": {
+      "$roomId": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      }
+    }
+  }
+}
