@@ -20,7 +20,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
 
-    Timer(const Duration(seconds: 2), () {
+    Timer(const Duration(seconds: 4), () {
       final isLoggedIn = ref.read(authStateProvider);
       if (isLoggedIn) {
         context.go(AppRoutes.home);

@@ -23,7 +23,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
 
   return GoRouter(
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.splash,
     refreshListenable: authNotifier,
     /* redirect: (context, state) {
       if (state.matchedLocation == AppRoutes.splash) return null;
