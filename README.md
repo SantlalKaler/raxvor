@@ -24,7 +24,7 @@ It supports **text chat, audio calls, and video calls**, making it perfect for p
 
 ### 💬 Chat
 - Real-time text messaging between users.  
-- Message history stored in **Supabase**.  
+- Message history stored in **Firebase**.  
 - Supports emoji and message timestamps.
 - Online/Offline status
 - Last Seen 
