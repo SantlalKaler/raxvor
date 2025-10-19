@@ -55,6 +55,3 @@ It supports **text chat, audio calls, and video calls**, making it perfect for p
 | **Hosting / Deployment** | Supabase / Firebase |
 
 ---
-
-# Run the app
-flutter run
