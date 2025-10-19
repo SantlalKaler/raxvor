@@ -25,7 +25,9 @@ It supports **text chat, audio calls, and video calls**, making it perfect for p
 ### 💬 Chat
 - Real-time text messaging between users.  
 - Message history stored in **Supabase**.  
-- Supports emoji and message timestamps.  
+- Supports emoji and message timestamps.
+- Online/Offline status
+- Last Seen 
 
 ### 📞 Audio & Video Calling
 - High-quality **audio and video calls** powered by **Agora SDK**.  
