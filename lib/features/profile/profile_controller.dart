@@ -45,23 +45,20 @@ class ProfileController
 
   Future<void> uploadProfileImage(File imageFile, String uId) async {
     try {
-      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storagePath = 'profile_images/$fileName';
+      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      final storagePath = 'uploads/$fileName';
       printValue('Current Supabase user: ${supabase.auth.currentUser}');
 
       await supabase.storage
-          .from('user_profiles')
+          .from('images')
           .upload(
             storagePath,
             imageFile,
-            fileOptions: const FileOptions(
-              cacheControl: '3600',
-              upsert: true, // overwrite if exists
-            ),
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
           );
 
       final imageUrl = supabase.storage
-          .from('user_profiles')
+          .from('images')
           .getPublicUrl(storagePath);
 
       await supabase

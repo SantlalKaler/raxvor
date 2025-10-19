@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +10,7 @@ import 'package:raxvor/features/wallet/wallet_screen.dart';
 
 import '../app/app_routes.dart';
 import 'auth/auth_controller.dart';
+import 'chatroom/chatroom_controller.dart';
 import 'home/chat_list_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -18,6 +22,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
+  late StreamSubscription _callSub;
 
   final List<Widget> _screens = [
     ChatListScreen(),
@@ -29,6 +34,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUid = FirebaseAuth.instance.currentUser!.uid;
+
+    ref.read(chatControllerProvider.notifier).setPresenceOnline();
+    /*  // Listen for incoming calls
+    _callSub = FirebaseFirestore.instance
+        .collection('calls')
+        .where('receiverUid', isEqualTo: currentUid)
+        .snapshots()
+        .listen((snapshot) {
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            if (data['status'] == 'ringing') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => IncomingCallScreen(
+                    callerName: data['callerName'],
+                    channelName: data['channelName'],
+                    callType: data['callType'],
+                    callDocId: doc.id,
+                  ),
+                ),
+              );
+            }
+          }
+        });*/
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    ref.read(chatControllerProvider.notifier).setPresenceOffline();
   }
 
   @override

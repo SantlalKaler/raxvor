@@ -59,11 +59,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.chatroom,
         builder: (context, state) {
-          Map<String, String> data = state.extra as Map<String, String>;
+          Map<String, dynamic> data = state.extra as Map<String, dynamic>;
           return ChatRoomScreen(
             uId: data['uId']!,
             userName: data['username']!,
             profileImage: data['profile_image']!,
+            online: data['online'] as bool,
+            lastSeen: data['lastSeen'] as int,
           );
         },
       ),

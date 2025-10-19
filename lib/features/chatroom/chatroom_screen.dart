@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:raxvor/app/constants.dart';
+import 'package:intl/intl.dart';
+import 'package:raxvor/features/home/chat_list_controller.dart';
 
 import '../../app/constant/string_constant.dart';
 import '../../app/images.dart';
@@ -16,10 +16,14 @@ class ChatRoomScreen extends ConsumerStatefulWidget {
     required this.uId,
     required this.userName,
     required this.profileImage,
+    required this.lastSeen,
+    required this.online,
   });
   final String uId;
   final String userName;
   final String profileImage;
+  final int lastSeen;
+  final bool online;
 
   @override
   ConsumerState<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -28,12 +32,6 @@ class ChatRoomScreen extends ConsumerStatefulWidget {
 class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   final TextEditingController messageController = TextEditingController();
 
-  RtcEngine? _engine;
-  bool _inCall = false;
-  bool _muted = false;
-  int _localUid = 0;
-  Set<int> _remoteUids = {};
-
   @override
   void initState() {
     super.initState();
@@ -41,86 +39,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     final currentUid = FirebaseAuth.instance.currentUser!.uid;
     final roomId = getRoomId(currentUid, widget.uId);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      printValue("📦 Subscribing to roomId: $roomId");
       ref.read(chatControllerProvider.notifier).subscribeToRoom(roomId);
       ref.read(chatControllerProvider.notifier).setPresenceOnline();
     });
-  }
-
-  Future<void> _startAudioCall(String channelName) async {
-    final status = await Permission.microphone.request();
-    if (!status.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Microphone permission denied')),
-      );
-      return;
-    }
-
-    // 2) create engine
-    _engine ??= createAgoraRtcEngine();
-    await _engine!.initialize(
-      RtcEngineContext(
-        appId: agoraAppId,
-        channelProfile: ChannelProfileType.channelProfileCommunication,
-      ),
-    );
-
-    _engine!.registerEventHandler(
-      RtcEngineEventHandler(
-        onJoinChannelSuccess: (connection, elapsed) {
-          setState(() {
-            _inCall = true;
-          });
-          printValue('Agora: joined channel ${connection.channelId}');
-        },
-        onUserJoined: (connection, remoteUid, elapsed) {
-          setState(() {
-            _remoteUids.add(remoteUid);
-          });
-          printValue('Agora: remote uid joined $remoteUid');
-        },
-        onUserOffline: (connection, remoteUid, reason) {
-          setState(() {
-            _remoteUids.remove(remoteUid);
-          });
-          printValue('Agora: remote uid left $remoteUid');
-        },
-      ),
-    );
-
-    await _engine!.enableAudio();
-
-    await _engine!.joinChannel(
-      token: '',
-      channelId: channelName,
-      uid: _localUid,
-      options: const ChannelMediaOptions(),
-    );
-  }
-
-  Future<void> _endAudioCall() async {
-    if (_engine != null) {
-      try {
-        await _engine!.leaveChannel();
-        await _engine!.release();
-      } catch (e) {
-        print('Error leaving channel: $e');
-      } finally {
-        setState(() {
-          _engine = null;
-          _inCall = false;
-          _muted = false;
-          _remoteUids.clear();
-        });
-      }
-    }
-  }
-
-  void _toggleMute() {
-    if (_engine == null) return;
-    _muted = !_muted;
-    _engine!.muteLocalAudioStream(_muted);
-    setState(() {});
   }
 
   String getRoomId(String uid1, String uid2) {
@@ -133,55 +54,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     ref.read(chatControllerProvider.notifier).setPresenceOffline();
     ref.read(chatControllerProvider.notifier).unsubscribe();
     messageController.dispose();
-
-    _endAudioCall();
     super.dispose();
-  }
-
-  void _showInCallSheet() {
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'In call with ${widget.userName}',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _toggleMute,
-                    icon: Icon(_muted ? Icons.mic_off : Icons.mic),
-                    color: _muted ? Colors.white : Colors.deepPurple,
-                    iconSize: 28,
-                  ),
-                  const SizedBox(width: 20),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                    onPressed: () async {
-                      await _endAudioCall();
-                      Navigator.pop(context); // close sheet
-                    },
-                    child: const Text('Leave'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text('Participants: ${_remoteUids.length + 1}'),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -196,26 +69,42 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
           },
           icon: Icon(Icons.arrow_back_ios),
         ),
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 13,
-              backgroundColor: Colors.grey.shade200,
-              backgroundImage: AssetImage(ImageConst.user) as ImageProvider,
-            ),
-            SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        title: Consumer(
+          builder: (context, ref, child) {
+            final _ = ref.watch(chatControllerProvider.notifier);
+            final _ = ref.watch(chatControllerProvider);
+            return Row(
               children: [
-                Text(widget.userName, style: TextStyle(fontSize: 16)),
-                if (_inCall)
-                  Text(
-                    'In call • ${_remoteUids.length + 1} connected',
-                    style: TextStyle(fontSize: 12),
-                  ),
+                CircleAvatar(
+                  radius: 13,
+                  backgroundColor: Colors.grey.shade200,
+                  backgroundImage: widget.profileImage != ""
+                      ? NetworkImage(widget.profileImage)
+                      : AssetImage(ImageConst.user) as ImageProvider,
+                ),
+                SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.userName, style: TextStyle(fontSize: 16)),
+
+                    Text(
+                      widget.online
+                          ? "Online"
+                          : DateFormat('dd-MMM-yyyy hh:mm a')
+                                .format(
+                                  DateTime.fromMillisecondsSinceEpoch(
+                                    widget.lastSeen,
+                                  ),
+                                )
+                                .toString(),
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
               ],
-            ),
-          ],
+            );
+          },
         ),
         actions: [
           IconButton(
@@ -223,25 +112,125 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               final currentUid = FirebaseAuth.instance.currentUser!.uid;
               final roomId = getRoomId(currentUid, widget.uId);
 
-              if (!_inCall) {
-                // start call
-                await _startAudioCall(roomId);
-                // Optionally, open a bottom sheet showing call UI
-                _showInCallSheet();
+              if (!ref.read(chatControllerProvider.notifier).isJoined) {
+                showModalBottomSheet(
+                  context: context,
+                  isDismissible: false,
+                  builder: (_) {
+                    return Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: CircularProgressIndicator(),
+                    );
+                  },
+                );
+                await ref
+                    .read(chatControllerProvider.notifier)
+                    .initAgora(roomId);
+                context.pop();
+                showModalBottomSheet(
+                  context: context,
+                  isDismissible: false,
+                  builder: (_) {
+                    return Consumer(
+                      builder: (context, ref, child) {
+                        return InCallBottomSheet(userName: widget.userName);
+                      },
+                    );
+                  },
+                );
+                /* if (ref.read(chatControllerProvider.notifier).isJoined) {
+                  showModalBottomSheet(
+                    context: context,
+                    isDismissible: false,
+                    builder: (_) {
+                      return Consumer(
+                        builder: (context, ref, child) {
+                          return InCallBottomSheet(userName: widget.userName);
+                        },
+                      );
+                    },
+                  );
+                }
+                else {
+                  showModalBottomSheet(
+                    context: context,
+                    isDismissible: false,
+                    builder: (_) {
+                      return Consumer(
+                        builder: (context, ref, child) {
+                          return Padding(
+                            padding: EdgeInsetsGeometry.all(16),
+                            child: Column(
+                              children: [
+                                Text(
+                                  "Unable to connect with ${widget.userName}",
+                                ),
+                                SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        context.pop();
+                                      },
+                                      child: Text("Ok"),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                }*/
+                /* await ref
+                    .read(chatControllerProvider.notifier)
+                    .startCall(widget.uId);*/
               } else {
-                // end call
-                await _endAudioCall();
-                Navigator.of(
-                  context,
-                ).popUntil((route) => route.isFirst); // optional close sheet
+                await ref.read(chatControllerProvider.notifier).leaveChannel();
+                Navigator.of(context).popUntil((route) => route.isFirst);
               }
             },
-            icon: Icon(_inCall ? Icons.call_end : Icons.call),
-            color: _inCall ? Colors.red : Colors.white,
+            icon: Icon(Icons.call),
+            color: Colors.black87,
           ),
-          IconButton(onPressed: () {}, icon: Icon(Icons.video_call)),
+          IconButton(
+            onPressed: () async {
+              final currentUid = FirebaseAuth.instance.currentUser!.uid;
+              final roomId = getRoomId(currentUid, widget.uId);
+
+              if (!ref.read(chatControllerProvider.notifier).isJoined) {
+                showModalBottomSheet(
+                  context: context,
+                  isDismissible: false,
+                  builder: (_) => const Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+
+                await ref
+                    .read(chatControllerProvider.notifier)
+                    .initAgora(roomId, isVideo: true);
+                context.pop();
+
+                showModalBottomSheet(
+                  context: context,
+                  isDismissible: false,
+                  isScrollControlled: true,
+                  builder: (_) => const VideoCallBottomSheet(),
+                );
+              } else {
+                await ref.read(chatControllerProvider.notifier).leaveChannel();
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+            },
+            icon: Icon(Icons.video_call),
+          ),
         ],
       ),
+
       body: Column(
         children: [
           Expanded(
@@ -284,6 +273,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               error: (err, st) => Center(child: Text('Error: $err')),
             ),
           ),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -318,6 +308,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                         ref
                             .read(chatControllerProvider.notifier)
                             .setTyping(widget.uId, false);
+                        ref
+                            .read(chatListControllerProvider.notifier)
+                            .loadUsersWithLastMessages();
                       }
                       messageController.clear();
                     }
@@ -336,6 +329,168 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class InCallBottomSheet extends ConsumerStatefulWidget {
+  const InCallBottomSheet({super.key, required this.userName});
+  final String userName;
+
+  @override
+  ConsumerState<InCallBottomSheet> createState() => _InCallBottomSheetState();
+}
+
+class _InCallBottomSheetState extends ConsumerState<InCallBottomSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final isMuted = ref.watch(muteProvider);
+    final isSpeaker = ref.watch(speakerProvider);
+    var timer = ref.watch(timerProvider);
+
+    String _formatDuration(Duration duration) {
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+      final minutes = twoDigits(duration.inMinutes.remainder(60));
+      final seconds = twoDigits(duration.inSeconds.remainder(60));
+      return "$minutes:$seconds";
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(_formatDuration(timer), style: const TextStyle(fontSize: 12)),
+          Text(
+            'In call with ${widget.userName}',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: () =>
+                    ref.read(chatControllerProvider.notifier).toggleMute(),
+                icon: Icon(isMuted ? Icons.mic_off : Icons.mic),
+                iconSize: 28,
+              ),
+              const SizedBox(width: 20),
+              IconButton(
+                onPressed: () =>
+                    ref.read(chatControllerProvider.notifier).toggleSpeaker(),
+                icon: Icon(isSpeaker ? Icons.volume_up : Icons.volume_down),
+                iconSize: 28,
+              ),
+              const SizedBox(width: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () async {
+                  await ref
+                      .read(chatControllerProvider.notifier)
+                      .leaveChannel();
+                  context.pop();
+                },
+                child: const Text(
+                  'Leave',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          /* const SizedBox(height: 8),
+              Text(
+                'Participants: ${ref.read(chatControllerProvider.notifier).remoteUid}',
+              ),*/
+        ],
+      ),
+    );
+  }
+}
+
+class VideoCallBottomSheet extends ConsumerWidget {
+  const VideoCallBottomSheet({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isMuted = ref.watch(muteProvider);
+    final isSpeaker = ref.watch(speakerProvider);
+    final isVideo = ref.watch(videoProvider);
+    final timer = ref.watch(timerProvider);
+    final controller = ref.read(chatControllerProvider.notifier);
+    final remoteUid = controller.remoteUid;
+
+    String _formatDuration(Duration duration) {
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+      final minutes = twoDigits(duration.inMinutes.remainder(60));
+      final seconds = twoDigits(duration.inSeconds.remainder(60));
+      return "$minutes:$seconds";
+    }
+
+    return SafeArea(
+      child: Column(
+        children: [
+          Text(_formatDuration(timer), style: const TextStyle(fontSize: 12)),
+          Expanded(
+            child: Stack(
+              children: [
+                if (remoteUid != null)
+                  AgoraVideoView(
+                    controller: VideoViewController.remote(
+                      rtcEngine: controller.engine!,
+                      canvas: VideoCanvas(uid: remoteUid),
+                      connection: RtcConnection(channelId: tempChannel),
+                    ),
+                  )
+                else
+                  const Center(child: Text("Waiting for remote user...")),
+
+                Align(
+                  alignment: Alignment.topRight,
+                  child: SizedBox(
+                    width: 120,
+                    height: 160,
+                    child: AgoraVideoView(
+                      controller: VideoViewController(
+                        rtcEngine: controller.engine!,
+                        canvas: const VideoCanvas(uid: 0),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: () =>
+                    ref.read(chatControllerProvider.notifier).toggleMute(),
+                icon: Icon(isMuted ? Icons.mic_off : Icons.mic),
+              ),
+              IconButton(
+                onPressed: () =>
+                    ref.read(chatControllerProvider.notifier).toggleSpeaker(),
+                icon: Icon(isSpeaker ? Icons.volume_up : Icons.volume_down),
+              ),
+              IconButton(
+                onPressed: () =>
+                    ref.read(chatControllerProvider.notifier).toggleVideo(),
+                icon: Icon(isVideo ? Icons.videocam : Icons.videocam_off),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () async {
+                  await controller.leaveChannel();
+                  Navigator.pop(context);
+                },
+                child: const Text('End', style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         ],
       ),

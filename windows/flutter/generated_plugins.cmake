@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   agora_rtc_engine
   app_links
+  cloud_firestore
   file_selector_windows
   firebase_auth
   firebase_core

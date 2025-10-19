@@ -189,8 +189,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         backgroundColor: Colors.grey.shade200,
                         backgroundImage: selectedImage != null
                             ? FileImage(selectedImage!)
-                            : (data['profile_photo'] != null
-                                      ? NetworkImage(data['profile_photo'])
+                            : (data['profile_image'] != null
+                                      ? NetworkImage(data['profile_image'])
                                       : AssetImage(ImageConst.user))
                                   as ImageProvider,
                       ),

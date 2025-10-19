@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
@@ -66,11 +67,21 @@ class AuthController {
 
   User? get currentUser => _auth.currentUser;
 
+  Future<String> getToken() async {
+    var token = await FirebaseMessaging.instance.getToken();
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      token = newToken;
+    });
+    return token ?? "";
+  }
+
   Future<void> saveUser(String email, String uId) async {
+    final token = await getToken();
+
     try {
       var data = await supa.Supabase.instance.client
           .from(supabaseUserTable)
-          .insert({"email": email, "uid": uId})
+          .insert({"email": email, "uid": uId, "fcm_token": token})
           .select();
 
       printValue("Data save in supabase : ${data}");

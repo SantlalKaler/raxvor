@@ -51,8 +51,20 @@ class ChatListController
               .limitToLast(1)
               .get();
 
+          final onlineDb = await _db.ref('presence/$uid').get();
+
           String? lastMessage;
           String? time;
+          int? lastSeen;
+          bool online = false;
+
+          if (onlineDb.exists && onlineDb.value != null) {
+            final dataMap = Map<String, dynamic>.from(
+              onlineDb.value as Map<Object?, Object?>,
+            );
+            online = dataMap['online'] == "true" ? true : false;
+            lastSeen = dataMap['lastSeen'];
+          }
 
           if (lastMsgSnap.exists && lastMsgSnap.value != null) {
             final dataMap = Map<String, dynamic>.from(
@@ -72,6 +84,8 @@ class ChatListController
             ...user,
             'lastMessage': lastMessage ?? '',
             'time': time ?? '',
+            'online': online,
+            'lastSeen': lastSeen ?? "",
           };
         }),
       );
@@ -99,7 +113,6 @@ class ChatListController
           .order('name');
 
       final users = List<Map<String, dynamic>>.from(response);
-
       state = AsyncValue.data(users);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

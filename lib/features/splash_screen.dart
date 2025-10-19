@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../app/app_routes.dart';
 import '../app/images.dart';
-import '../app/providers/providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -20,8 +20,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
 
-    Timer(const Duration(seconds: 4), () {
-      final isLoggedIn = ref.read(authStateProvider);
+    Timer(const Duration(seconds: 2), () {
+      final isLoggedIn = FirebaseAuth.instance.currentUser?.uid != null;
       if (isLoggedIn) {
         context.go(AppRoutes.home);
       } else {

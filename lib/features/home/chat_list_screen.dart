@@ -31,18 +31,34 @@ class _HomeScreenState extends ConsumerState<ChatListScreen> {
                 child: ListTile(
                   tileColor: Colors.grey.withValues(alpha: 0.1),
                   onTap: () {
-                    Map<String, String> data = {
+                    Map<String, dynamic> data = {
                       "uId": user['uid'],
                       "username": user['name'],
                       "profile_image": user['profile_image'] ?? "",
+                      "online": user['online'],
+                      "lastSeen": user['lastSeen'],
                     };
                     context.push(AppRoutes.chatroom, extra: data);
                   },
-                  leading: CircleAvatar(
-                    radius: 25,
-                    backgroundImage: user['profile_image'] != null
-                        ? NetworkImage(user['profile_image'])
-                        : AssetImage(ImageConst.user) as ImageProvider,
+                  leading: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundImage: user['profile_image'] != null
+                            ? NetworkImage(user['profile_image'])
+                            : AssetImage(ImageConst.user) as ImageProvider,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: CircleAvatar(
+                          radius: 5,
+                          backgroundColor: user['online'] == true
+                              ? Colors.green
+                              : Colors.transparent,
+                        ),
+                      ),
+                    ],
                   ),
                   title: Text(
                     user['name'],
